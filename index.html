@@ -5,30 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AKB Mail Viewer</title>
     <style>
-        /* 基本樣式 */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; margin: 0; padding: 16px; background-color: #f0f2f5; color: #1c1e21; }
-        .container { background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; }
-        /* 讀取中樣式 */
+        .container { background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; max-width: 600px; margin: 0 auto; }
         .loader { text-align: center; padding: 40px; font-size: 18px; color: #606770; display: block; }
-        /* 內容樣式 */
         .content { padding: 16px; display: none; }
         .header { border-bottom: 1px solid #ddd; padding-bottom: 12px; margin-bottom: 12px; }
         .member-name { font-size: 20px; font-weight: bold; color: #000; }
         .subject { font-size: 16px; color: #606770; margin-top: 4px; }
         .mail-body { font-size: 15px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; }
-        /* 圖片庫樣式 */
         .gallery { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
-        .gallery img { width: 100%; height: auto; border-radius: 6px; cursor: pointer; transition: transform 0.2s; }
-        .gallery img:hover { transform: scale(1.05); }
+        .gallery img { width: 100%; height: auto; border-radius: 6px; }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <div id="loader" class="loader">
-            💌 讀取郵件中...
-        </div>
-
+        <div id="loader" class="loader">💌 讀取郵件中...</div>
         <div id="content" class="content">
             <div class="header">
                 <div id="memberName" class="member-name"></div>
@@ -42,14 +33,18 @@
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
         // --- 設定 ---
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzb2oauktOdNebVUmbpiCYGC1kqjRs352PcnHi5s2tqDzaYLm7AtcCYI9wWG6txCt8/exec"; // ⚠️ 請替換成步驟二的 Web App 網址
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzb2oauktOdNebVUmbpiCYGC1kqjRs352PcnHi5s2tqDzaYLm7AtcCYI9wWG6txCt8/exec";
+        const LIFF_ID = "2007653963-WddmvxMm";
 
         // 主函式
         async function main() {
-            // 1. 初始化 LIFF
-            await liff.init({ liffId: "2007653963-WddmvxMm" }); // ⚠️ 這個 ID 會在下一步取得，先留空
-
-            // 2. 從 URL 取得 mailId
+            try {
+                await liff.init({ liffId: LIFF_ID });
+            } catch (err) {
+                document.getElementById('loader').innerText = 'LIFF 初始化失敗。';
+                return;
+            }
+            
             const urlParams = new URLSearchParams(window.location.search);
             const mailId = urlParams.get('mailId');
 
@@ -58,57 +53,46 @@
                 return;
             }
 
-            // 3. 呼叫後端 API 獲取資料
             try {
                 const response = await fetch(`${GAS_WEB_APP_URL}?mailId=${mailId}`);
+                if (!response.ok) {
+                    throw new Error(`伺服器錯誤: ${response.status} ${response.statusText}`);
+                }
                 const data = await response.json();
 
                 if (data.error) {
                     throw new Error(data.message);
                 }
 
-                // 4. 將資料填入頁面
                 populateContent(data);
-
             } catch (error) {
-                document.getElementById('loader').innerText = `讀取失敗：${error.message}`;
+                document.getElementById('loader').innerText = `讀取資料失敗：${error.message}`;
             }
         }
 
-        // 填充內容的函式// [已修改] 填充內容的函式
-        // [已修改] 填充內容的函式，以處理 Base64 圖片
-// [最終優化版] 填充內容的函式 (先文後圖)
-function populateContent(data) {
-    // 1. 馬上顯示文字內容
-    document.getElementById('memberName').innerText = data.memberName;
-    document.getElementById('subject').innerText = data.subject;
-    document.getElementById('translatedBody').innerText = data.translatedBody;
+        // 填充內容的函式
+        function populateContent(data) {
+            document.getElementById('memberName').innerText = data.memberName;
+            document.getElementById('subject').innerText = data.subject;
+            document.getElementById('translatedBody').innerText = data.translatedBody;
 
-    // 2. 隱藏讀取提示，顯示文字區塊
-    document.getElementById('loader').style.display = 'none';
-    document.getElementById('content').style.display = 'block';
+            const gallery = document.getElementById('imageGallery');
+            gallery.innerHTML = ''; 
 
-    // 3. 逐一載入圖片
-    const gallery = document.getElementById('imageGallery');
-    gallery.innerHTML = ''; // 清空舊內容
+            // 我們從後端接收的是 'images' 屬性，裡面是 Base64 字串
+            if (data.images && data.images.length > 0) {
+                data.images.forEach(base64Url => {
+                    const img = document.createElement('img');
+                    img.src = base64Url; // 直接將 Base64 字串設為 src
+                    gallery.appendChild(img);
+                });
+            }
+            
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+        }
 
-    if (data.imageIds && data.imageIds.length > 0) {
-        data.imageIds.forEach(id => {
-            const img = document.createElement('img');
-
-            // 圖片的 src 指向我們自己的後端 Web App，並帶上 imageId 參數
-            img.src = `${GAS_WEB_APP_URL}?imageId=${id}`;
-
-            // 點擊事件連結到原始的 Google Drive 網址
-            const originalUrl = `https://drive.google.com/uc?export=view&id=${id}`;
-            img.onclick = () => window.open(originalUrl, '_blank');
-
-            gallery.appendChild(img);
-        });
-    }
-}
         main();
     </script>
-
 </body>
 </html>
