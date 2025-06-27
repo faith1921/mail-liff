@@ -85,11 +85,15 @@
             gallery.innerHTML = ''; // 清空舊內容
             if (data.imageUrls && data.imageUrls.length > 0) {
                 data.imageUrls.forEach(url => {
-                    const img = document.createElement('img');
-                    img.src = url;
-                    // 點擊圖片可以在新分頁開啟原圖
-                    img.onclick = () => window.open(url, '_blank');
-                    gallery.appendChild(img);
+                const img = document.createElement('img');
+    
+                // ✅ 新增這一行
+                img.referrerPolicy = "no-referrer"; 
+    
+                img.src = url;
+                // 點擊圖片可以在新分頁開啟原圖
+                img.onclick = () => window.open(url, '_blank');
+                gallery.appendChild(img);
                 });
             }
 
