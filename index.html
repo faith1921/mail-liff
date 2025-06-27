@@ -75,33 +75,37 @@
             }
         }
 
-        // 填充內容的函式
+        // 填充內容的函式// [已修改] 填充內容的函式
         function populateContent(data) {
-            document.getElementById('memberName').innerText = data.memberName;
-            document.getElementById('subject').innerText = data.subject;
-            document.getElementById('translatedBody').innerText = data.translatedBody;
+        document.getElementById('memberName').innerText = data.memberName;
+        document.getElementById('subject').innerText = data.subject;
+        document.getElementById('translatedBody').innerText = data.translatedBody;
 
-            const gallery = document.getElementById('imageGallery');
-            gallery.innerHTML = ''; // 清空舊內容
-            if (data.imageUrls && data.imageUrls.length > 0) {
-                data.imageUrls.forEach(url => {
+        const gallery = document.getElementById('imageGallery');
+        gallery.innerHTML = ''; // 清空舊內容
+
+        // --- 主要修改點 ---
+        // 現在我們接收的是 imageIds 陣列
+        if (data.imageIds && data.imageIds.length > 0) {
+            data.imageIds.forEach(id => {
                 const img = document.createElement('img');
+
+                // 圖片的 src 指向我們自己的後端 Web App，並帶上 imageId 參數
+                img.src = `${GAS_WEB_APP_URL}?imageId=${id}`;
     
-                // ✅ 新增這一行
-                img.referrerPolicy = "no-referrer"; 
+                // 點擊事件還是可以連結到原始的 Google Drive 網址
+                const originalUrl = `https://drive.google.com/uc?export=view&id=${id}`;
+                img.onclick = () => window.open(originalUrl, '_blank');
     
-                img.src = url;
-                // 點擊圖片可以在新分頁開啟原圖
-                img.onclick = () => window.open(url, '_blank');
                 gallery.appendChild(img);
-                });
-            }
+            });
+    }    
+    // -----------------
 
-            // 隱藏讀取提示，顯示內容
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('content').style.display = 'block';
-        }
-
+    // 隱藏讀取提示，顯示內容
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+}
         main();
     </script>
 
