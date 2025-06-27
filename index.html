@@ -76,35 +76,35 @@
         }
 
         // 填充內容的函式// [已修改] 填充內容的函式
-        function populateContent(data) {
-        document.getElementById('memberName').innerText = data.memberName;
-        document.getElementById('subject').innerText = data.subject;
-        document.getElementById('translatedBody').innerText = data.translatedBody;
+        // [已修改] 填充內容的函式，以處理 Base64 圖片
+function populateContent(data) {
+    document.getElementById('memberName').innerText = data.memberName;
+    document.getElementById('subject').innerText = data.subject;
+    document.getElementById('translatedBody').innerText = data.translatedBody;
 
-        const gallery = document.getElementById('imageGallery');
-        gallery.innerHTML = ''; // 清空舊內容
-
-        // --- 主要修改點 ---
-        // 現在我們接收的是 imageIds 陣列
-        if (data.imageIds && data.imageIds.length > 0) {
-            data.imageIds.forEach(id => {
-                const img = document.createElement('img');
-
-                // 圖片的 src 指向我們自己的後端 Web App，並帶上 imageId 參數
-                img.src = `${GAS_WEB_APP_URL}?imageId=${id}`;
+    const gallery = document.getElementById('imageGallery');
+    gallery.innerHTML = ''; // 清空舊內容
     
-                // 點擊事件還是可以連結到原始的 Google Drive 網址
-                const originalUrl = `https://drive.google.com/uc?export=view&id=${id}`;
-                img.onclick = () => window.open(originalUrl, '_blank');
-    
-                gallery.appendChild(img);
-            });
-    }    
+    // --- 主要修改點 ---
+    // 現在我們接收的是包含 Base64 Data URL 的 images 陣列
+    if (data.images && data.images.length > 0) {
+        data.images.forEach(base64Url => {
+            const img = document.createElement('img');
+            
+            // 直接將 Base64 Data URL 設為 src
+            img.src = base64Url;
+            
+            // 點擊事件可以移除，因為已經沒有原始連結了
+            // 如果仍想保留點擊放大功能，需要其他方法，暫時先簡化
+            
+            gallery.appendChild(img);
+        });
+    }
     // -----------------
-
+    
     // 隱藏讀取提示，顯示內容
-        document.getElementById('loader').style.display = 'none';
-        document.getElementById('content').style.display = 'block';
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
 }
         main();
     </script>
